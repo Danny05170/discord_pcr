@@ -1,0 +1,13 @@
+{
+    "token": "DC_bot_token", 
+    "proxy": null, 
+    "playerprefs": {
+    
+        "4": "path"
+    },
+    "binds_file": "binds.json" , 
+    "enemy_chanel": "enemyChannel.json" , 
+    "channel11" :"CHANNEL_ID",
+    "channel33" :"CHANNEL_ID" ,
+    "max_enemy": -1 
+}
