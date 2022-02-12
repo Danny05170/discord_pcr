@@ -1,39 +1,35 @@
 # pcrjjc2 for Discord
-本repo是[pcrjjc2](https://github.com/cc004/pcrjjc2)的discord机器人, 仅用于tw服.
 
-支持绑定一个用户绑定多个PCR账号以及击剑自动提醒.
+本repo是根據[pcrjjc2](https://github.com/cc004/pcrjjc2)的discord機器人, 僅用於tw服，再進行優化的
 
-**本项目基于AGPL v3协议开源，由于项目特殊性，禁止基于本项目的任何商业行为**
+[bind uid server] 綁定競技場排名變動推送，默認雙場均啟用，僅排名降低時推送
+[query uid1 server1 uid2 server2 ...] 查詢競技場簡要信息
+[watch 11/33 on/off] 打開或者關閉11或者33的推送
+[private on/off] 啟用或關閉私聊推送
+server: 1 2 3 4(台一~台四)
+============下面用不太到===========
+[delete] 刪除競技場排名變動推送綁定
+[delete id1 server1 id2 server2 ...] 刪除指定競技場排名變動推送綁定
+[querystatus] 查看排名變動推送綁定狀態
+============新增功能===========
+#11 返回與你同區競技場的戰友的排名  >>方便搞電梯，建議在各自的指揮室用
+#33 返回與你同區公主競技場的戰友的排名  >>方便搞電梯，建議在各自的指揮室用
+#check_group 返回你兩個p場的group number
+#enemy enemyid 4 >>設立你的仇家list 我限定每人只可有set兩個仇家
+#e  >>返回你仇家現在兩個p 場的位置 方便你在裡面卡秒時 跟蹤仇家
+#delete_enemy enemyid 
+#set enemyid >>把enemy id 跟頻道綁定
+#unset enemyid >>把enemy id 跟頻道解綁
 
-## 用法说明
-1. 首先获得一个discord API的token
-2. 复制一份 /data/data/tw.sonet.princessconnect/sharedprefs/tw.sonet.princessconnect.v2.playerprefs.xml   **一般需要root**
-    + 切换账号会导致xml失效, 取出playerpref后,删除再引继:
+
+支持綁定一個用戶綁定多個PCR賬號以及擊劍自動提醒.
+
+**本項目基於AGPL v3協議開源，由於項目特殊性，禁止基於本項目的任何商業行為**
+
+## 用法說明
+1. 首先獲得一個discord API的token
+2. 覆制一份 /data/data/tw.sonet.princessconnect/sharedprefs/tw.sonet.princessconnect.v2.playerprefs.xml   **一般需要root**
+    + 切換賬號會導致xml失效, 取出playerpref後,刪除再引繼:
         1. /data/data/tw.sonet.princessconnect/sharedprefs/tw.sonet.princessconnect.v2.playerprefs.xml
-        2. /data/data/tw.sonet.princessconnect/files/savedData 文件夹
-3. 在项目根目录下新建config.json,内容如下:
-```
-{
-    "token": "", //DISCORD API TOKEN
-    "proxy": null, //如果需要代理,请参考原repo
-    "playerprefs": {
-        "1": "台1 playerpref.xml的路径, 台2\3\4同理"
-    },
-    "binds_file": "binds.json" //用于存储用户绑定状态
-    "max_enemy": -1 //如果非负,表示黑名单UID最大数量(0为不启用)
-}
-```
-binds.json的格式说明:
-```
-{
-   "uid1": {
-        "uid": str,  # discord user id, 与key相同
-        "gid": int,  # discord 频道ID, 每个用户仅支持在一个群组中推送消息
-        "11": bool,  # 是否推送11排名下降
-        "33": bool,  # 是否推送33排名下降,
-        "data": List[str, str]  # (服务器, 九码)
-        "enemy": List[str]  # 黑名单UID
-        "is_private": bool  # 私聊推送开关
-    }
-}
-```
+        2. /data/data/tw.sonet.princessconnect/files/savedData 文件夾
+
