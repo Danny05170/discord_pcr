@@ -1,6 +1,8 @@
 # pcrjjc2 for Discord
 
-本repo是根據[pcrjjc2](https://github.com/cc004/pcrjjc2)的discord機器人, 僅用於tw服，再進行優化的
+本repo是根據[pcrjjc2](https://github.com/cc004/pcrjjc2)的discord機器人(僅用於tw服) 再進行優化的
+
+功能如下: 
 
 [bind uid server] 綁定競技場排名變動推送，默認雙場均啟用，僅排名降低時推送
 [query uid1 server1 uid2 server2 ...] 查詢競技場簡要信息
