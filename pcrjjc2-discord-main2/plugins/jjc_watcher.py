@@ -1,9 +1,9 @@
-from pcrclient import pcrclient, ApiException
+from utils.pcrclient import pcrclient, ApiException
 from asyncio import Lock
 from copy import deepcopy
 from traceback import format_exc
-from playerpref import decryptxml
-from sender import *
+from utils.playerpref import decryptxml
+from utils.sender import *
 from discord.ext import tasks
 from bot import bot
 from datetime import datetime , timedelta
@@ -34,7 +34,8 @@ async def query(id: str, client):
 
 
 def initialize(config):
-    global _config, _binds, _cache, _clients  ,enemy_chanel , role_dict_11, role_dict_33
+    global _config, _binds, _cache, _clients  ,enemy_chanel , role_dict_11, role_dict_33,super_user
+    super_user= ['714144621978189924','436178879497895936','380898248652750849','296860596349960192','344206501243781121']
     role_dict_11 ={ "1" : "1v1 (１)" , 
     "2" : "1v1 (２)" , 
     "3" : "1v1 (３)" , 
@@ -44,7 +45,17 @@ def initialize(config):
     "7" : "1v1 (７)" ,
     "8" : "1v1 (８)" ,
     "9" : "1v1 (９)" ,
-    "10" : "1v1 (１０)" 
+    "10" : "1v1 (１０)" ,
+    "11": "1v1 (１１)", 
+    "12": "1v1 (１２)", 
+    "13": "1v1 (１３)", 
+    "14": "1v1 (１４)", 
+    "15": "1v1 (１５)", 
+    "16": "1v1 (１６)", 
+    "17": "1v1 (１７)", 
+    "18": "1v1 (１８)", 
+    "19": "1v1 (１９)", 
+    "20": "1v1 (２０)", 
     }
     role_dict_33 ={ "1" : "3v3 (１)" , 
     "2" : "3v3 (２)" , 
@@ -56,11 +67,16 @@ def initialize(config):
     "8" : "3v3 (８)" ,
     "9" : "3v3 (９)" ,
     "10" : "3v3 (１０)" ,
-    "11": "1v1 (11)", 
-    "12": "1v1 (12)", 
-    "13": "1v1 (13)", 
-    "14": "1v1 (14)", 
-    "15": "1v1 (15)", 
+    "11": "3v3 (１１)", 
+    "12": "3v3 (１２)", 
+    "13": "3v3 (１３)", 
+    "14": "3v3 (１４)", 
+    "15": "3v3 (１５)", 
+    "16": "3v3 (１６)", 
+    "17": "3v3 (１７)", 
+    "18": "3v3 (１８)", 
+    "19": "3v3 (１９)", 
+    "20": "3v3 (２０)", 
     }
     _config = config
     if not os.path.exists(_config['binds_file']):
@@ -118,8 +134,63 @@ server: 1 2 3 4(台一~台四)
      #   enemy_chanel[set_id]['33_time'] = 0
    # save_enemy_chanel()    
 
+@bot.command(name='here')
+async def get_enemy_channel_infol(ctx, *args):
+    try :
+        here_channel_id = [k for k,v in enemy_chanel.items() if v['gid'] == ctx.channel.id]
+        here_channel_id= here_channel_id[0]
+        now = datetime.now()
+        time = now.strftime("%H:%M:%S")
+        res = await query(here_channel_id, _clients['4'])
+        last_login = res['last_login_time']
+        last_login = datetime.fromtimestamp(last_login).strftime("%B %d, %Y %H:%M:%S")
+    #    msg.append(  f'''{res['user_name']}:\n競技場排名：{res["arena_rank"]}\n公主競技場排名：{res["grand_arena_rank"]} \n最後上線時間：{last_login}\n━━━━━━━━━━━━━━━'''  )
+        await ctx.send(f'''{res['user_name']}\nID :{here_channel_id}\nTime:{time}\n競技場排名：{res["arena_rank"]}\n公主競技場排名：{res["grand_arena_rank"]} \n最後上線時間：{last_login}\n━━━━━━━━━━━━━━━''')
+    except:
+        await ctx.send(str('搜尋不到這頻道相應的玩家')  )  
 
+@bot.command(name='set')
+async def get_channel(ctx, *args):
+    async with lck:
+        uid = str(ctx.author.id)
+        expire =  _binds[uid].get('expire', "1999-01-04")  
+        expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+        if datetime.now() > expire :
+            return await ctx.send('該為付費內容 請聯絡Bot管理員')
+        set_id = args[0]
+    try:
+        res = await query(set_id, _clients['4'])
+        channel = bot.get_channel(ctx.channel.id)
+        if set_id in enemy_chanel :
+            await ctx.send(str('該id已跟某channel鎖定')  )
+        else:    
+            enemy_chanel[set_id] = {
+                'name': res["user_name"],
+                'gid': ctx.channel.id,
+                "33": 0,
+            }
+            save_enemy_chanel()
+            now_name  =res["user_name"]
+            now_name = f"{now_name} 0"
+            await channel.edit(name=now_name)
+            msg = f'{res["user_name"]} 與頻道綁定成功'
+            await ctx.send(str(msg)  )
+    except :
+        await ctx.send(str('沒有這玩家')  )        
+   # for channel in ctx.guild.channels:
+     #   if channel.name == given_name:
+      #      wanted_channel_id = channel.id
 
+  #  await ctx.send(channel.id) # this is just to check \
+
+@bot.command(name='unset')
+async def unset_channel(ctx, *args):
+    async with lck:
+        set_id = args[0]
+        enemy_chanel.pop(set_id, None)
+        save_enemy_chanel()
+        msg = f'成功解除綁定'
+        await ctx.send(str(msg)  )
 
 #@tasks.loop(seconds=1)  #1823
 
@@ -182,11 +253,12 @@ async def on_arena_bind(ctx, dc_id : str, pcr_id: str, expire: int):
         pcr_id : 
     """
     super_uid = str(ctx.author.id)
-    if super_uid=="714144621978189924":
+    if super_uid in super_user:
         expire = datetime.now() + timedelta(days=expire*30)
         expire = expire.strftime("%Y-%m-%d")
         server = "4"
-        uid = dc_id
+        uid = dc_id.replace('<@!','').replace('>','').replace('<@','')
+        print(uid)
         try:
             res = await query(pcr_id, _clients[server])
         except:
@@ -194,6 +266,10 @@ async def on_arena_bind(ctx, dc_id : str, pcr_id: str, expire: int):
         async with lck:
             last = _binds[uid] if uid in _binds else None   
             expire_date = expire
+            if uid not in  _binds :
+                enemy= []
+            else:    
+                enemy =  _binds[uid].get('enemy',[])  
             if last is None: #1st buy and no uid in database
                 next_data = [(server, pcr_id)]
             elif [server, pcr_id] in last['data']:  ###續費 or 1st buy but already have uid in database
@@ -209,6 +285,7 @@ async def on_arena_bind(ctx, dc_id : str, pcr_id: str, expire: int):
                     '11': True,
                     '33': True,
                     'data': next_data,
+                    'enemy': enemy,
                     'is_private': last is not None and last['is_private'],
                     '11_group' :   _binds[uid]['11_group']   ,
                     '33_group' :   _binds[uid]['33_group'] 
@@ -231,17 +308,131 @@ async def on_arena_bind(ctx, dc_id : str, pcr_id: str, expire: int):
         await ctx.send(f'競技場綁定成功,到期日為{print_expire}')
 
 
+@bot.command(name='enemy')
+async def add_enemy(ctx, pcr_id: str, server: str):
+    """
+        ctx: discord context
+        pcr_id : 
+    """
+    uid = str(ctx.author.id)
+    expire =  _binds[uid].get('expire', "1999-01-04")  
+    expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+    if datetime.now() > expire :
+        return await ctx.send('該為付費內容 請聯絡Bot管理員')
+    if server not in _clients:
+        return await ctx.send("不支持查詢該服務器")
+    try:
+        res = await query(pcr_id, _clients[server])
+    except:
+        return await ctx.send("未查詢到九碼,綁定失敗!")
+    if   _binds[uid].get('enemy') :
+        enemy_len = len (    _binds[uid]['enemy']    )
+        if enemy_len > 5:
+            return await ctx.send("綁定敵人數已經有5個 請先刪除")
+        if pcr_id in  _binds[uid]['enemy']  :
+            return await ctx.send("你已經綁定了此人 你還想綁 !? 真的哪麼恨??")    
+        _binds[uid]['enemy'].append(  pcr_id  )
+        save_binds()
+    if not  _binds[uid].get('enemy') :
+        enemy_list = []
+        enemy_list.append(  pcr_id  ) 
+        _binds[uid]['enemy'] = enemy_list
+        save_binds()
+    await ctx.send('敵人競技場綁定成功')    
 
-
-
+@bot.command(name='11')
+async def check_11(ctx, *args):
+    uid = str(ctx.author.id)
+    expire =  _binds[uid].get('expire', "1999-01-04")  
+    expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+    if datetime.now() > expire :
+        return await ctx.send('該為付費內容 請聯絡Bot管理員')
+    if len(args)==1:
+        if "@" in str(args[0]) :
+            uid = str(args[0]).replace('<@','').replace('>','').replace('!','') 
+          #  print('uid',uid)
+    else:
+        uid = str(ctx.author.id)
+    group_11 = _binds[uid]['11_group']
+    msg= []    
+    await ctx.send('loading...' )  
+    dataframe_11 = pd.DataFrame(_binds.values()) 
+    dataframe_11 = dataframe_11[dataframe_11['11_group']==group_11]
+    for index, row in dataframe_11.iterrows():
+       try:
+           peace_11 = row['11_peace']
+       except:
+           peace_11 = False
+       check_uid=  list(row['data']) 
+       if check_uid :
+           usder_id = check_uid[0][1]
+           res = await query(usder_id, _clients['4'])
+       else:
+           continue 
+       try :
+        member = await ctx.guild.fetch_member(str(row['uid'].replace("fake","")))
+        member_name = member.nick
+        if member_name is None :
+            member = await bot.fetch_user(str(row['uid'].replace("fake","")))
+            member_name= member.display_name
+       except :
+           member_name = ""
+       if peace_11 ==True: 
+            msg.append( (int(res["arena_rank"]),f'~~{res["user_name"]}~~' , "【" + str(member_name) + "】" ))     
+       else:    
+           msg.append( (int(res["arena_rank"]),f'{res["user_name"]}' , "【" + str(member_name) + "】" ))     
+    msg = sorted(msg, key=lambda x: x[0])
+    msg = [ str(x) for x in msg  ]
+    joined_string = "\n".join(msg)
+  #  print( str(joined_string)  )
+    await ctx.send(str(joined_string)  )   
 
    
+@bot.command(name='33')
+async def check_33(ctx, *args):
+    uid = str(ctx.author.id)
+    expire =  _binds[uid].get('expire', "1999-01-04")  
+    expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+    if datetime.now() > expire :
+        return await ctx.send('該為付費內容 請聯絡Bot管理員')
+    if len(args)==1:
+        print( args   )
+        if "@" in str(args[0]) :
+            uid = str(args[0]).replace('<@','').replace('>','').replace('!','') 
+    else:
+        uid = str(ctx.author.id)
+    group_33 = _binds[uid]['33_group']
+    msg= []    
+    await ctx.send('loading...' )  
+    dataframe_33 = pd.DataFrame(_binds.values()) 
+    dataframe_33 = dataframe_33[dataframe_33['33_group']==group_33]
+    for index, row in dataframe_33.iterrows():
+       check_uid=  list(row['data']) 
+       if check_uid :
+           usder_id = check_uid[0][1]
+           res = await query(usder_id, _clients['4'])
+       else:
+           continue  
+       try:
+        member = await ctx.guild.fetch_member(str(row['uid'].replace("fake","")))
+        member_name = member.nick
+        if member_name is None :
+            member = await bot.fetch_user(str(row['uid'].replace("fake","")))
+            member_name= member.display_name
+       except:
+           member_name = ""
+       msg.append( (int(res["grand_arena_rank"]),f'{res["user_name"]}' , "【" + str(member_name) + "】" ))       
+    msg = sorted(msg, key=lambda x: x[0])
+    msg = [ str(x) for x in msg  ]
+    joined_string = "\n".join(msg)
+  #  print( str(joined_string)  )
+    await ctx.send(str(joined_string)  )  
 
 
 @bot.command(name='farm')
 async def check_farm(ctx, *args):
     uid = str(ctx.author.id)
-    if uid =="714144621978189924" :
+    if uid in super_user :
         farm_id = pd.read_excel('princess.xlsx')
         farm_id = farm_id[farm_id['FARM']==int(args[0])    ]      
         msg = [] 
@@ -269,10 +460,188 @@ async def enemy_check(ctx, *args):
         print(guild.id)
   #  print(   ctx.author.name)
 
+@bot.command(name='e')
+async def enemy_check(ctx, *args):
+    uid = str(ctx.author.id)
+    expire =  _binds[uid].get('expire', "1999-01-04")  
+    expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+    if datetime.now() > expire :
+        return await ctx.send('該為付費內容 請聯絡Bot管理員')
+    else:
+        if _binds[uid].get('enemy') :
+            enemys = _binds[uid]['enemy']     
+        else:
+            await ctx.send('您還未綁定enemy')
+        msg = []    
+        for enemy in enemys:
+            res = await query(enemy, _clients['4'])
+            last_login = res['last_login_time']
+            last_login = datetime.fromtimestamp(last_login).strftime("%B %d, %Y %H:%M:%S")
+            msg.append(  f'''{res['user_name']}:\nID:{enemy}\n競技場排名：{res["arena_rank"]}\n公主競技場排名：{res["grand_arena_rank"]} \n最後上線時間：{last_login}\n━━━━━━━━━━━━━━━'''  )
+        await ctx.send('\n'.join(msg))
+
+
+@bot.command(name='peace')
+async def register(ctx, *args):
+    peace_where = str(args[0]) 
+    on_or_off = str(args[1]) 
+    if "on" in on_or_off:
+        peace_status = True
+    else:
+       peace_status = False  ###stop the off function first
+    if peace_where =="11":
+        uid = str(ctx.author.id)
+        expire =  _binds[uid].get('expire', "1999-01-04")  
+        expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+        if datetime.now() > expire :
+            return await ctx.send('該為付費內容 請聯絡Bot管理員')
+        else:
+            pcr_id  = _binds[uid]['data'][0][1]
+          #  res = await query(pcr_id, _clients['4'])
+            group_11 = _binds[uid]['11_group']
+            print(  'group_11' ,group_11   )
+            if "enemy" in _binds[uid] :
+                enemy = _binds[uid]['enemy']
+            else:
+                enemy = []
+            _binds[uid] = {
+                    'uid': uid,
+                    'gid': ctx.channel.id,
+                    "expire": _binds[uid]['expire'] ,
+                    '11':  True ,
+                    '33': True ,
+                    'data': _binds[uid]['data'] ,
+                    'is_private': False ,
+                    '11_group' :   _binds[uid]['11_group']   ,
+                    '33_group' :  _binds[uid]['33_group'] ,
+                    'enemy' : enemy,
+                    "11_peace" :True ###stop the off function first
+                }
+            save_binds()
+            member = await ctx.guild.fetch_member(str(uid))
+            member_name = member.nick
+            tag_group = role_dict_11[str(group_11)] 
+            role = discord.utils.get(member.guild.roles, name=tag_group) #Bot get guild(server) roles
+            if member_name is None :
+                member = await bot.fetch_user(uid)
+                member_name= member.display_name  
+            if peace_status ==True :   
+                await ctx.send(f'<@&{str(role.id)}> \n【{member_name}】在此跟同區1vs1-{group_11}區大佬訂下互不打恊議 \n當你打指令#11時會看到我遊戲名字劃線 \n代表每日15點排名結算前夕，除了前3名的自己人外 \n本人絕對不會刺其他非前3名的自已人 \n故結算前夕本人不在前3名時也請各位大佬不要刺我\n違者將通報記點，感謝高抬貴手(跪')
+            else:
+                await ctx.send(f'請向bot管理員申請')    
+                  #  await ctx.send(f'<@&{str(role.id)}> \n{member_name}跟同區1vs1-{group_11}區大佬除消互不打恊議 \n當你打指令#11時會看到我遊戲名字沒有劃線 \n根據各1vs1區的規則互打')    
+                
 
 
 
+@bot.command(name='query')
+async def on_query_arena(ctx, *args):
+    uid = str(ctx.author.id).replace("fake","")
+    expire =  _binds[uid].get('expire', "1999-01-04")  
+    expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+    if datetime.now() > expire :
+        return await ctx.send('該為付費內容 請聯絡Bot管理員')
+    else:
+        delta = expire-datetime.now()
+        await ctx.send(f"<@{uid}>" +" "+ f'到期日為{expire} 還有{delta.days}天') 
+    if len(args)==1 and "@"  in str(args[0]) :
+        uid = str(args[0]).replace('<@','').replace('>','').replace('!','') 
+    else:
+        uid = str(ctx.author.id) 
+    data = _binds[uid]['data']     
+    async with lck:
+        if len(args) ==1 :
+            args = args + ('4',)   
+      #  expire =  _binds[uid].get('expire', "1999-01-04")  
+      #  expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+     #   if datetime.now() > expire :
+      #      return await ctx.send('該為付費內容 請聯絡Bot管理員')
+     #   else:
+       #     delta = expire-datetime.now()
+         #   await ctx.send(f'到期日為{expire} 還有{delta.days}天')
+       #     data = _binds[uid]['data']
+    #   else:
+        if len(args)>0 :
+            if "@" not in  str(args[0]) :
+                data = [(args[2 * i + 1], args[2 * i])
+                for i in range(len(args) // 2)]         
+    #  print(  data  )                         
+        for (server, pcr_id) in data:
+            if server not in _clients:
+                continue
+            try:
+                now = datetime.now()
+                time = now.strftime("%H:%M:%S")
+                res = await query(pcr_id, _clients[server])
+            #    print(res)
+                last_login = res['last_login_time']
+                last_login = datetime.fromtimestamp(last_login).strftime("%B %d, %Y %H:%M:%S")
+            #    msg.append(  f'''{res['user_name']}:\n競技場排名：{res["arena_rank"]}\n公主競技場排名：{res["grand_arena_rank"]} \n最後上線時間：{last_login}\n━━━━━━━━━━━━━━━'''  )
+                await ctx.send(f'''{res['user_name']}\nID :{pcr_id}\nTime:{time}\n競技場排名：{res["arena_rank"]}\n公主競技場排名：{res["grand_arena_rank"]} \n最後上線時間：{last_login}\n━━━━━━━━━━━━━━━''')
+            except ApiException as e:
+                await ctx.send(f'查詢出錯，{e}')
 
+@bot.command(name='delete')
+async def delete_arena_sub(ctx, *args):
+    uid = str(ctx.author.id)
+    expire =  _binds[uid].get('expire', "1999-01-04")  
+    expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+    if datetime.now() > expire :
+        return await ctx.send('該為付費內容 請聯絡Bot管理員')
+    if "@" in str(args[0]) :
+        uid = str(args[0]).replace('<@','').replace('>','').replace('!','') 
+    else:
+        uid = str(ctx.author.id)
+    if len(args) == 1:
+        async with lck:
+            _binds.pop(uid)
+            save_binds()
+        return await ctx.send('刪除競技場訂閱成功')
+ #   if len(args) % 2 != 0:
+     #   return await ctx.send('格式輸入錯誤,請參考幫助')
+    data = [(args[2 * i + 2], args[2 * i+1])
+            for i in range(len(args) // 2)]     
+    async with lck:
+        for t in data:
+            try:
+                _binds[uid]['data'].remove(t)
+            except:    
+                _binds[uid]['data'].remove(list(t))
+        save_binds()
+    return await ctx.send('刪除競技場訂閱成功')
+
+
+@bot.command(name='delete_enemy')
+async def delete_enemy(ctx, pcr_id: str):
+    uid = str(ctx.author.id)
+    expire =  _binds[uid].get('expire', "1999-01-04")  
+    expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+    if datetime.now() > expire :
+        return await ctx.send('該為付費內容 請聯絡Bot管理員')
+    if not _binds[uid].get('enemy') :
+        await ctx.send('您還未綁定enemy')    
+    if pcr_id in  _binds[uid]['enemy']:   
+        _binds[uid]['enemy'].remove(pcr_id)
+        save_binds()
+        return await ctx.send('刪除enemy成功')
+    else:
+        return await ctx.send('沒有這個enemy')
+
+
+@bot.command(name='querystatus')
+async def send_arena_sub_status(ctx):
+    uid = str(ctx.author.id)
+    expire =  _binds[uid].get('expire', "1999-01-04")  
+    expire  = datetime.strptime(str(expire),'%Y-%m-%d')
+    if datetime.now() > expire :
+        return await ctx.send('該為付費內容 請聯絡Bot管理員')
+    else:
+        info = _binds[uid]
+        await ctx.send(f'''
+    當前競技場綁定ID：{info['data']}
+競技場訂閱：{'開啟' if info['11'] else '關閉'}
+公主競技場訂閱：{'開啟' if info['33'] else '關閉'}
+推送渠道: {'私聊' if info['is_private'] else '頻道'}''')
 
 
 @tasks.loop(seconds=70)
@@ -345,7 +714,7 @@ async def on_arena_schedule():
             except:
                 print(f'對{pcr_id}的檢查出錯\n{format_exc()}')
 
-#on_arena_schedule.start()
+on_arena_schedule.start()
 
 @bot.command('watch')
 async def change_arena_sub(ctx, arena_type, state, *args):
@@ -365,9 +734,47 @@ async def change_arena_sub(ctx, arena_type, state, *args):
         save_binds()
         await ctx.send(f'{arena_type} {state}')
 
+@bot.command(name='check_group')
+async def check_group(ctx, *args):
+    if len(args)==1:
+        if "@" in str(args[0]) :
+            uid = str(args[0]).replace('<@','').replace('>','').replace('!','') 
+            pcr_id  = _binds[uid]['data'][0][1]
+           # print(pcr_id)
+        else:
+            pcr_id = str(args[0])   
+    else:
+        uid  =str(ctx.author.id)    
+        pcr_id  = _binds[uid]['data'][0][1]
+    try:
+        res = await query(pcr_id, _clients['4'])
+        await ctx.send(f'''{res['user_name']} 台{4}:\n競技場組別：{res["arena_group"]}\n公主競技場組別：{res["grand_arena_group"]}''')
+    except ApiException as e:
+        await ctx.send(f'查詢出錯，{e}')
+     
+@bot.command(name='check_bind')
+async def check_bind(ctx, *args):
+    if len(args)==1:
+        uid = str(args[0]).replace('<@','').replace('>','').replace('!','') 
+    else:
+        uid  =str(ctx.author.id)    
+    if uid not in _binds:
+        await ctx.send('該為付費內容 請聯絡Bot管理員')
+    else:
+        await ctx.send('有綁定競技場')
 
 
-
+@bot.command(name='check_time')
+async def check_bind(ctx, *args):
+    if len(args)==1:
+        uid = str(args[0]).replace('<@','').replace('>','').replace('!','') 
+    else:
+        uid  =str(ctx.author.id)    
+    if uid not in _binds:
+        await ctx.send('該id未bind')
+    else:
+        expire =  _binds[uid].get('expire', "沒有到期日")  
+        await ctx.send(expire)
 
 @bot.command('add_role')
 async def on_member_join(ctx, *args): 
@@ -449,65 +856,6 @@ async def update_binds(ctx):
             }
         save_binds()
 
-@bot.command(name='unset')
-async def unset_channel(ctx, *args):
-    async with lck:
-        set_id = args[0]
-        enemy_chanel.pop(set_id, None)
-        save_enemy_chanel()
-        msg = f'成功解除綁定'
-        await ctx.send(str(msg)  )
-
-
-@bot.command(name='here')
-async def get_enemy_channel_infol(ctx, *args):
-    try :
-        here_channel_id = [k for k,v in enemy_chanel.items() if v['gid'] == ctx.channel.id]
-        here_channel_id= here_channel_id[0]
-        now = datetime.now()
-        time = now.strftime("%H:%M:%S")
-        res = await query(here_channel_id, _clients['4'])
-        last_login = res['last_login_time']
-        last_login = datetime.fromtimestamp(last_login).strftime("%B %d, %Y %H:%M:%S")
-    #    msg.append(  f'''{res['user_name']}:\n競技場排名：{res["arena_rank"]}\n公主競技場排名：{res["grand_arena_rank"]} \n最後上線時間：{last_login}\n━━━━━━━━━━━━━━━'''  )
-        await ctx.send(f'''{res['user_name']}\nID :{here_channel_id}\nTime:{time}\n競技場排名：{res["arena_rank"]}\n公主競技場排名：{res["grand_arena_rank"]} \n最後上線時間：{last_login}\n━━━━━━━━━━━━━━━''')
-    except:
-        await ctx.send(str('搜尋不到這頻道相應的玩家')  )  
-
-
-
-@bot.command(name='set')
-async def get_channel(ctx, *args):
-    async with lck:
-        uid = str(ctx.author.id)
-        expire =  _binds[uid].get('expire', "1999-01-04")  
-        expire  = datetime.strptime(str(expire),'%Y-%m-%d')
-        if datetime.now() > expire :
-            return await ctx.send('該為付費內容 請聯絡Bot管理員')
-        set_id = args[0]
-        try:
-            res = await query(set_id, _clients['4'])
-            channel = bot.get_channel(ctx.channel.id)
-            if set_id in enemy_chanel :
-                await ctx.send(str('該id已跟某channel鎖定')  )
-            else:    
-                enemy_chanel[set_id] = {
-                    'name': res["user_name"],
-                    'gid': ctx.channel.id,
-                    "11": 0,
-                    "33": 0,
-                    "11_time": 0,
-                    "33_time": 0
-                }
-                save_enemy_chanel()
-                now_name  =res["user_name"]
-                now_name = f"{now_name} 0 0"
-                await channel.edit(name=now_name)
-                msg = f'{res["user_name"]} 與channel {ctx.channel.id} 綁定成功'
-                await ctx.send(str(msg)  )
-        except :
-            await ctx.send(str('沒有這玩家')  )        
-
 
 
 @bot.command('private')
@@ -531,4 +879,3 @@ def save_binds():
 def save_enemy_chanel():
     with open(_config['enemy_chanel'], 'w') as f:
         json.dump(enemy_chanel, f, indent=4)
-
