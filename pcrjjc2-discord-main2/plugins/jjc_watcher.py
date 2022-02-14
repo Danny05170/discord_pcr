@@ -429,37 +429,6 @@ async def check_33(ctx, *args):
     await ctx.send(str(joined_string)  )  
 
 
-@bot.command(name='farm')
-async def check_farm(ctx, *args):
-    uid = str(ctx.author.id)
-    if uid in super_user :
-        farm_id = pd.read_excel('princess.xlsx')
-        farm_id = farm_id[farm_id['FARM']==int(args[0])    ]      
-        msg = [] 
-        for index, row in farm_id.iterrows() :
-         #   print(row)
-            res = await query(row['ID'], _clients['4'])
-            last_login = res['last_login_time']
-            last_login = datetime.fromtimestamp(last_login).strftime("%B %d, %Y %H:%M:%S")
-            msg.append( str(row['ID']) + " | " + row['LV'] + " | " + last_login    )
-        msg = sorted(msg, key=lambda  x: x.split(' | ')[2] )
-        msg = [ str(x) for x in msg  ]
-        joined_string = "\n".join(msg)
-    #  print( str(joined_string)  )
-        await ctx.send(str(joined_string)  )  
-    else:
-        await ctx.send('你沒有農場')   
-
-@bot.command(name='test')
-async def enemy_check(ctx, *args):
-    print(  'ctx.guild', ctx.guild  )
-    member = await ctx.guild.fetch_member(742397309362503690)
-    print(member.nick)
-    for guild in bot.guilds:
-        print(guild)
-        print(guild.id)
-  #  print(   ctx.author.name)
-
 @bot.command(name='e')
 async def enemy_check(ctx, *args):
     uid = str(ctx.author.id)
@@ -794,7 +763,7 @@ async def on_member_join(ctx, *args):
     await member.add_roles(rank)
     await ctx.send(f'{member} 成功加入了{role1} {role2}')
 
-'''@bot.command('add_roles')
+@bot.command('add_roles')
 async def on_member_join2(ctx): 
     role_dict_11 ={ "1" : "1v1 (１)" , 
     "2" : "1v1 (２)" , 
@@ -835,9 +804,9 @@ async def on_member_join2(ctx):
         rank = discord.utils.get(member.guild.roles, name=role2) #Bot get guild(server) roles
         await member.add_roles(rank)
         await ctx.send(f'{member} 成功加入了{role1} {role2}') 
-        '''
+        
 
-@bot.command('update_bindsrerewrewrew')
+@bot.command('update_binds')
 async def update_binds(ctx): 
     for every_uid in _binds.keys():
         pcr_id  = _binds[every_uid]['data'][0][1]
