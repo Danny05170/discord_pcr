@@ -1,11 +1,10 @@
 {
-    "uid1": {
-         "uid": str,  # discord user id, 与key相同
-         "gid": int,  # discord 频道ID, 每个用户仅支持在一个群组中推送消息
-         "11": bool,  # 是否推送11排名下降
-         "33": bool,  # 是否推送33排名下降,
-         "data": List[str, str]  # (服务器, 九码)
-         "enemy": List[str]  # 黑名单UID
-         "is_private": bool  # 私聊推送开关
-     }
- }
+    "user_id": {
+        "name": "user_name",
+        "gid": "DC_channel_ID",
+        "11": 16,
+        "33": 29,
+        "11_time": 0,
+        "33_time": 0
+    },
+}   
